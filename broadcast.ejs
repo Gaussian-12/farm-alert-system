@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FarmAlert — Broadcast SMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root{--green:#2d6a2d;--green-light:#4a9e4a;--green-pale:#e8f5e8;--gold:#c8941a;--bg:#f5f0e8;--white:#fff;--text:#1a1a0e;--muted:#6b6b50;--border:#d4c9a8;--red:#c0392b;--shadow:0 2px 12px rgba(45,106,45,0.10)}
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
+        .sidebar{width:240px;background:var(--green);color:#fff;display:flex;flex-direction:column;min-height:100vh;position:fixed;top:0;left:0;z-index:100}
+        .sidebar-brand{padding:28px 20px 20px;border-bottom:1px solid rgba(255,255,255,0.15)}
+        .sidebar-brand .logo-text{font-size:1.35rem;font-weight:800;color:#fff}
+        .sidebar-brand .logo-sub{font-family:'Space Mono',monospace;font-size:0.65rem;color:rgba(255,255,255,0.6);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+        .sidebar nav{padding:16px 0;flex:1}
+        .nav-section{font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.45);padding:16px 20px 6px}
+        .sidebar a{display:flex;align-items:center;gap:10px;padding:10px 20px;color:rgba(255,255,255,0.8);text-decoration:none;font-weight:600;font-size:0.9rem;transition:all 0.15s;border-left:3px solid transparent}
+        .sidebar a:hover,.sidebar a.active{background:rgba(255,255,255,0.1);color:#fff;border-left-color:#f0b429}
+        .sidebar a .icon{font-size:1rem;width:20px;text-align:center}
+        .sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.15);font-family:'Space Mono',monospace;font-size:0.65rem;color:rgba(255,255,255,0.4)}
+        .main{margin-left:240px;flex:1}
+        .topbar{background:var(--white);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;align-items:center;justify-content:space-between}
+        .topbar h1{font-size:1.3rem;font-weight:800;color:var(--green)}
+        .topbar .timestamp{font-family:'Space Mono',monospace;font-size:0.72rem;color:var(--muted)}
+        .content{padding:28px 32px;max-width:680px}
+        .alert{padding:12px 16px;border-radius:6px;margin-bottom:20px;font-weight:600;font-size:0.9rem}
+        .alert-success{background:var(--green-pale);color:var(--green);border:1px solid #b2dfb2}
+        .alert-error{background:#fdecea;color:var(--red);border:1px solid #f5c6cb}
+        .card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:28px;box-shadow:var(--shadow)}
+        .card-title{font-size:0.75rem;font-family:'Space Mono',monospace;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:20px}
+        .stat-banner{background:var(--green-pale);border:1px solid #b2dfb2;border-radius:8px;padding:16px 20px;margin-bottom:24px;display:flex;align-items:center;gap:12px}
+        .stat-banner .big-num{font-size:2rem;font-weight:800;color:var(--green)}
+        .stat-banner .label{font-size:0.88rem;color:var(--green);font-weight:600}
+        .stat-banner .sublabel{font-size:0.78rem;color:var(--muted)}
+        .form-group{margin-bottom:18px}
+        label{display:block;font-size:0.82rem;font-weight:600;margin-bottom:6px}
+        textarea{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:6px;font-family:'Syne',sans-serif;font-size:0.92rem;background:#faf8f4;color:var(--text);resize:vertical;min-height:120px}
+        textarea:focus{outline:none;border-color:var(--green-light)}
+        .char-count{font-family:'Space Mono',monospace;font-size:0.72rem;color:var(--muted);text-align:right;margin-top:4px}
+        .char-count.warn{color:var(--red)}
+        .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:6px;font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;cursor:pointer;border:none;transition:all 0.15s}
+        .btn-gold{background:var(--gold);color:#fff}
+        .btn-gold:hover{background:#d4a021}
+        .warn-box{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:14px 18px;margin-top:20px;font-size:0.85rem;color:#7a5800}
+        .warn-box strong{display:block;margin-bottom:4px}
+        .templates{margin-bottom:20px}
+        .templates-label{font-size:0.75rem;font-family:'Space Mono',monospace;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+        .template-btn{display:inline-block;padding:5px 12px;background:#f5f0e8;border:1px solid var(--border);border-radius:20px;font-size:0.8rem;cursor:pointer;margin:3px;transition:all 0.12s}
+        .template-btn:hover{background:var(--green-pale);border-color:var(--green-light);color:var(--green)}
+    </style>
+</head>
+<body>
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <div class="logo-text">🌱 FarmAlert</div>
+        <div class="logo-sub">Malawi · Admin</div>
+    </div>
+    <nav>
+        <div class="nav-section">Overview</div>
+        <a href="/dashboard"><span class="icon">📊</span> Dashboard</a>
+        <div class="nav-section">Data</div>
+        <a href="/farmers"><span class="icon">👨‍🌾</span> Farmers</a>
+        <a href="/messages"><span class="icon">💬</span> Messages</a>
+        <a href="/prices"><span class="icon">💰</span> Crop Prices</a>
+        <div class="nav-section">Tools</div>
+        <a href="/broadcast" class="active"><span class="icon">📡</span> Broadcast SMS</a>
+    </nav>
+    <div class="sidebar-footer">FarmAlert v1.0</div>
+</aside>
+<div class="main">
+    <div class="topbar">
+        <h1>📡 Broadcast SMS</h1>
+        <span class="timestamp" id="clock"></span>
+    </div>
+    <div class="content">
+        <% if (typeof success !== 'undefined' && success) { %><div class="alert alert-success">✅ <%= success %></div><% } %>
+        <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-error">❌ <%= error %></div><% } %>
+
+        <div class="stat-banner">
+            <div class="big-num"><%= farmerCount %></div>
+            <div>
+                <div class="label">Farmers will receive this message</div>
+                <div class="sublabel">All registered phone numbers</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Compose Broadcast Message</div>
+
+            <div class="templates">
+                <div class="templates-label">Quick templates</div>
+                <span class="template-btn" onclick="setTemplate('Maize prices have been updated. Send PRICE MAIZE to get the latest.')">Maize price update</span>
+                <span class="template-btn" onclick="setTemplate('Market alert: High demand for tomatoes this week. Good time to sell!')">Tomato market alert</span>
+                <span class="template-btn" onclick="setTemplate('Weather advisory: Heavy rains expected. Protect your crops and harvest what you can.')">Weather advisory</span>
+                <span class="template-btn" onclick="setTemplate('FarmAlert tip: Send HELP to see all available commands and crop prices.')">Help reminder</span>
+            </div>
+
+            <form method="POST" action="/send-broadcast" onsubmit="return confirmSend()">
+                <div class="form-group">
+                    <label>Message (SMS, max 160 characters recommended)</label>
+                    <textarea name="message" id="msgText" placeholder="Type your broadcast message here..." oninput="updateCount()" required></textarea>
+                    <div class="char-count" id="charCount">0 / 160</div>
+                </div>
+                <button type="submit" class="btn btn-gold">📡 Send to <%= farmerCount %> farmers</button>
+            </form>
+
+            <div class="warn-box">
+                <strong>⚠️ Note</strong>
+                This will send a real SMS to all registered farmers via Africa's Talking. Each SMS costs airtime credits. Make sure your message is correct before sending.
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function updateClock(){const el=document.getElementById('clock');if(el)el.textContent=new Date().toLocaleString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+    updateClock();setInterval(updateClock,60000);
+    function updateCount(){
+        const t=document.getElementById('msgText');
+        const c=document.getElementById('charCount');
+        const len=t.value.length;
+        c.textContent=len+' / 160';
+        c.className='char-count'+(len>160?' warn':'');
+    }
+    function setTemplate(msg){
+        document.getElementById('msgText').value=msg;
+        updateCount();
+    }
+    function confirmSend(){
+        const count=<%= farmerCount %>;
+        return confirm('Send this broadcast to '+count+' farmers? This will use SMS credits.');
+    }
+</script>
+</body>
+</html>

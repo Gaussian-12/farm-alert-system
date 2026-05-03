@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FarmAlert — Messages</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root{--green:#2d6a2d;--green-light:#4a9e4a;--green-pale:#e8f5e8;--gold:#c8941a;--bg:#f5f0e8;--white:#fff;--text:#1a1a0e;--muted:#6b6b50;--border:#d4c9a8;--red:#c0392b;--shadow:0 2px 12px rgba(45,106,45,0.10)}
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh}
+        .sidebar{width:240px;background:var(--green);color:#fff;display:flex;flex-direction:column;min-height:100vh;position:fixed;top:0;left:0;z-index:100}
+        .sidebar-brand{padding:28px 20px 20px;border-bottom:1px solid rgba(255,255,255,0.15)}
+        .sidebar-brand .logo-text{font-size:1.35rem;font-weight:800;color:#fff}
+        .sidebar-brand .logo-sub{font-family:'Space Mono',monospace;font-size:0.65rem;color:rgba(255,255,255,0.6);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+        .sidebar nav{padding:16px 0;flex:1}
+        .nav-section{font-family:'Space Mono',monospace;font-size:0.6rem;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,0.45);padding:16px 20px 6px}
+        .sidebar a{display:flex;align-items:center;gap:10px;padding:10px 20px;color:rgba(255,255,255,0.8);text-decoration:none;font-weight:600;font-size:0.9rem;transition:all 0.15s;border-left:3px solid transparent}
+        .sidebar a:hover,.sidebar a.active{background:rgba(255,255,255,0.1);color:#fff;border-left-color:#f0b429}
+        .sidebar a .icon{font-size:1rem;width:20px;text-align:center}
+        .sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,0.15);font-family:'Space Mono',monospace;font-size:0.65rem;color:rgba(255,255,255,0.4)}
+        .main{margin-left:240px;flex:1}
+        .topbar{background:var(--white);border-bottom:1px solid var(--border);padding:16px 32px;display:flex;align-items:center;justify-content:space-between}
+        .topbar h1{font-size:1.3rem;font-weight:800;color:var(--green)}
+        .topbar .timestamp{font-family:'Space Mono',monospace;font-size:0.72rem;color:var(--muted)}
+        .content{padding:28px 32px}
+        .card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:24px;box-shadow:var(--shadow)}
+        .card-title{font-size:0.75rem;font-family:'Space Mono',monospace;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+        .filter-row{display:flex;gap:12px;margin-bottom:20px}
+        .filter-row input,.filter-row select{padding:10px 14px;border:1.5px solid var(--border);border-radius:6px;font-family:'Syne',sans-serif;font-size:0.88rem;background:#faf8f4}
+        .filter-row input{flex:1}
+        .filter-row input:focus,.filter-row select:focus{outline:none;border-color:var(--green-light)}
+        table{width:100%;border-collapse:collapse;font-size:0.85rem}
+        th{font-family:'Space Mono',monospace;font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)}
+        td{padding:10px 12px;border-bottom:1px solid #f0eadc;vertical-align:top}
+        tr:last-child td{border-bottom:none}
+        tr:hover td{background:var(--green-pale)}
+        .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-family:'Space Mono',monospace;font-size:0.62rem;font-weight:700}
+        .badge-in{background:var(--green-pale);color:var(--green)}
+        .badge-out{background:#fff3e0;color:var(--gold)}
+        .msg-text{max-width:380px;word-break:break-word;font-size:0.83rem}
+        .count-badge{background:var(--green-pale);color:var(--green);border-radius:20px;padding:2px 10px;font-family:'Space Mono',monospace;font-size:0.72rem;font-weight:700;margin-left:8px}
+        .empty{text-align:center;padding:48px;color:var(--muted)}
+    </style>
+</head>
+<body>
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <div class="logo-text">🌱 FarmAlert</div>
+        <div class="logo-sub">Malawi · Admin</div>
+    </div>
+    <nav>
+        <div class="nav-section">Overview</div>
+        <a href="/dashboard"><span class="icon">📊</span> Dashboard</a>
+        <div class="nav-section">Data</div>
+        <a href="/farmers"><span class="icon">👨‍🌾</span> Farmers</a>
+        <a href="/messages" class="active"><span class="icon">💬</span> Messages</a>
+        <a href="/prices"><span class="icon">💰</span> Crop Prices</a>
+        <div class="nav-section">Tools</div>
+        <a href="/broadcast"><span class="icon">📡</span> Broadcast SMS</a>
+    </nav>
+    <div class="sidebar-footer">FarmAlert v1.0</div>
+</aside>
+<div class="main">
+    <div class="topbar">
+        <h1>💬 Messages <span class="count-badge"><%= messages.length %></span></h1>
+        <span class="timestamp" id="clock"></span>
+    </div>
+    <div class="content">
+        <div class="filter-row">
+            <input type="text" id="searchInput" placeholder="Filter by phone or message..." oninput="filterTable()">
+            <select id="dirFilter" onchange="filterTable()">
+                <option value="">All directions</option>
+                <option value="incoming">Incoming only</option>
+                <option value="outgoing">Outgoing only</option>
+            </select>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Message Log (last 200)</div>
+            <% if (messages.length === 0) { %>
+                <div class="empty">No messages yet.</div>
+            <% } else { %>
+            <table id="msgTable">
+                <thead>
+                    <tr><th>Time</th><th>Phone</th><th>Dir</th><th>Message</th></tr>
+                </thead>
+                <tbody>
+                <% messages.forEach(m => { %>
+                    <tr>
+                        <td style="font-size:0.78rem;white-space:nowrap;color:var(--muted)">
+                            <%= new Date(m.timestamp).toLocaleString('en-GB', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) %>
+                        </td>
+                        <td><code style="font-size:0.78rem"><%= m.phone_number %></code></td>
+                        <td><span class="badge badge-<%= m.direction === 'incoming' ? 'in' : 'out' %>"><%= m.direction %></span></td>
+                        <td class="msg-text"><%= m.message %></td>
+                    </tr>
+                <% }) %>
+                </tbody>
+            </table>
+            <% } %>
+        </div>
+    </div>
+</div>
+<script>
+    function updateClock(){const el=document.getElementById('clock');if(el)el.textContent=new Date().toLocaleString('en-GB',{weekday:'short',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+    updateClock();setInterval(updateClock,60000);
+    function filterTable(){
+        const q=document.getElementById('searchInput').value.toLowerCase();
+        const dir=document.getElementById('dirFilter').value;
+        document.querySelectorAll('#msgTable tbody tr').forEach(row=>{
+            const text=row.textContent.toLowerCase();
+            const dirMatch=!dir||row.querySelector('.badge').textContent.trim()===dir;
+            row.style.display=(text.includes(q)&&dirMatch)?'':'none';
+        });
+    }
+</script>
+</body>
+</html>
